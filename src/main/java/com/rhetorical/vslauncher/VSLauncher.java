@@ -3,11 +3,9 @@ package com.rhetorical.vslauncher;
 import com.google.gson.Gson;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -18,12 +16,17 @@ import java.util.Scanner;
  */
 public class VSLauncher {
 
+	private static Scanner inputScanner;
+
 	private static VSLauncherPrefs vsLauncherPrefs;
 	private static File installDir;
 
 	private static Map<String, Modpack> modpackMap = new HashMap<>();
 
 	public static void main( String[] args) throws Exception {
+		inputScanner = new Scanner(System.in);
+
+
 		File preferences = new File("vslauncherprefs.json");
 
 		if (!preferences.exists()) {
@@ -56,28 +59,69 @@ public class VSLauncher {
 	}
 
 	private static void processInput() {
-		Scanner scanner = new Scanner(System.in);
+
+		String input = "";
+
+		while (!input.equalsIgnoreCase("Q") && !input.equalsIgnoreCase("QUIT")) {
+			input = inputScanner.nextLine();
+
+			String[] split = input.split(" ");
+
+			if (split.length == 0) {
+				continue;
+			}
+
+			if (split[0].equalsIgnoreCase("add")) {
+				if (split.length != 2) {
+					System.out.println("Invalid arguments! Usage: 'add [url]' to add a pack!");
+				}
+			}
+
+		}
+
+
+		inputScanner.close();
+	}
+
+	public void addModpack(String jsonLink) {
+		Modpack modpack = new Modpack(jsonLink);
 
 
 
-		scanner.close();
 	}
 
 	private static void updateModpackInfo() throws IOException {
 
 		if (vsLauncherPrefs.modpacks != null) {
-			for (String str : vsLauncherPrefs.modpacks) {
-				URLConnection connection = new URL(str).openConnection();
+			for (Modpack modpack : vsLauncherPrefs.modpacks) {
+				Modpack pack = getModPackFromURL(modpack.packJson);
 
-				Scanner scanner = new Scanner(connection.getInputStream());
+				if (!modpack.packId.equalsIgnoreCase(pack.packId)) {
+					System.out.println("Error reading in modpack! There exists a modpack with two ids at the same location!");
+					continue;
+				}
 
-				String response = scanner.useDelimiter("\\A").next();
-				scanner.close();
-
-				System.out.println(String.format("Requested data from %s and received %s", str, response));
+				if (pack.packVersion > modpack.packVersion) {
+					//todo: update files
+				}
 			}
 		}
 
+	}
+
+	private static Modpack getModPackFromURL(String url) throws IOException {
+		URLConnection connection = new URL(url).openConnection();
+
+		Scanner scanner = new Scanner(connection.getInputStream());
+
+		String response = scanner.useDelimiter("\\A").next();
+		scanner.close();
+
+		System.out.println(String.format("Requested data from %s and received %s", url, response));
+
+		Gson gson = new Gson();
+
+		return gson.fromJson(response, Modpack.class);
 	}
 
 	private static File findInstallDirectory() {

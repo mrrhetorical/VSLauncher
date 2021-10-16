@@ -5,7 +5,7 @@ import java.util.List;
 
 public class VSLauncherPrefs {
 
-	public List<String> modpacks = new ArrayList<>();
+	public List<Modpack> modpacks = new ArrayList<>();
 
 	public int selectedModpack;
 }
