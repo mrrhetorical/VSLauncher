@@ -127,13 +127,11 @@ public class VSLauncher {
 
 				if(entry.isDirectory()) {
 					// Assume directories are stored parents first then children.
-					System.err.println("Extracting directory: " + entry.getName());
 					// This is not robust, just for demonstration purposes.
 					(new File(entry.getName())).mkdir();
 					continue;
 				}
 
-				System.err.println("Extracting file: " + entry.getName());
 				copyInputStream(zipFile.getInputStream(entry),
 						new BufferedOutputStream(new FileOutputStream(installDir.getPath() + "\\" + entry.getName())));
 			}
