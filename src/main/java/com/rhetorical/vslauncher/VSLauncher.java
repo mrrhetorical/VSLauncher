@@ -1,6 +1,8 @@
 package com.rhetorical.vslauncher;
 
 import com.google.gson.Gson;
+import com.rhetorical.vslauncher.Modpack;
+import com.rhetorical.vslauncher.VSLauncherPrefs;
 
 import java.io.*;
 import java.net.URL;
