@@ -1,8 +1,16 @@
 package com.rhetorical.vslauncher;
 
 import com.google.gson.Gson;
-import com.rhetorical.vslauncher.Modpack;
-import com.rhetorical.vslauncher.VSLauncherPrefs;
+import javafx.application.Application;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Group;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.layout.StackPane;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 import java.io.*;
 import java.net.URL;
@@ -11,6 +19,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -19,18 +28,36 @@ import java.util.zip.ZipFile;
  * Hello world!
  *
  */
-public class VSLauncher {
-
-	private static Scanner inputScanner;
+public class VSLauncher extends Application {
 
 	private static VSLauncherPrefs vsLauncherPrefs;
 	private static File installDir;
 
 	private static Map<String, Modpack> modpackMap = new HashMap<>();
 
-	public static void main(String[] args) throws Exception {
-		inputScanner = new Scanner(System.in);
+	//default pastebin: https://pastebin.com/raw/dkn2F2N3
 
+	@Override
+	public void start(Stage primaryStage) throws Exception {
+		URL url = Paths.get("src/main/java/com/rhetorical/vslauncher/MainScene.fxml").toUri().toURL();
+		Parent root = FXMLLoader.load(url);
+
+		primaryStage.setTitle("Vintage Story Mod Launcher");
+		primaryStage.setScene(new Scene(root, 320, 240));
+		primaryStage.setFullScreen(false);
+		primaryStage.getIcons().add(new Image("com/rhetorical/vslauncher/image/launcher.jpg"));
+		primaryStage.show();
+	}
+
+	public static void main(String[] args) throws Exception {
+
+		launch(args);
+
+
+//		launchFromCmdLine(args);
+	}
+
+	private static void launchFromCmdLine(String[] args) throws Exception {
 		if (args.length == 0) {
 			throw new Exception("No modpack specified!");
 		}
@@ -161,10 +188,9 @@ public class VSLauncher {
 	}
 
 	private static void launchGame() throws IOException {
-		//todo: launch game
 		String str = installDir.getParentFile().getParentFile() + "\\Vintagestory\\Vintagestory.exe";
 
-		Process process = Runtime.getRuntime().exec(str);
+		Runtime.getRuntime().exec(str);
 	}
 
 	private static boolean delRecursive(File dir) {
