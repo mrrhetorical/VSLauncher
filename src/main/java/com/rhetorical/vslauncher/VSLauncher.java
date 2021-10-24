@@ -2,14 +2,9 @@ package com.rhetorical.vslauncher;
 
 import com.google.gson.Gson;
 import javafx.application.Application;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Group;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
-import javafx.scene.layout.StackPane;
-import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -30,8 +25,10 @@ import java.util.zip.ZipFile;
  */
 public class VSLauncher extends Application {
 
-	private static VSLauncherPrefs vsLauncherPrefs;
-	private static File installDir;
+	public static Stage stage;
+
+	static VSLauncherPrefs vsLauncherPrefs;
+	static File installDir;
 
 	private static Map<String, Modpack> modpackMap = new HashMap<>();
 
@@ -39,32 +36,38 @@ public class VSLauncher extends Application {
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		stage = primaryStage;
+
 		URL url = Paths.get("src/main/java/com/rhetorical/vslauncher/MainScene.fxml").toUri().toURL();
 		Parent root = FXMLLoader.load(url);
 
 		primaryStage.setTitle("Vintage Story Mod Launcher");
 		primaryStage.setScene(new Scene(root, 320, 240));
 		primaryStage.setFullScreen(false);
-		primaryStage.getIcons().add(new Image("com/rhetorical/vslauncher/image/launcher.jpg"));
+//		primaryStage.getIcons().add(new Image("src/main/java/com/rhetorical/vslauncher/image/launcher.jpg"));
 		primaryStage.show();
 	}
 
 	public static void main(String[] args) throws Exception {
+		loadPreferences();
+
+		if (vsLauncherPrefs == null) {
+			vsLauncherPrefs = new VSLauncherPrefs();
+		}
+
+		if (vsLauncherPrefs.gameDirectory == null || vsLauncherPrefs.gameDirectory.isEmpty()) {
+			loadInstallDir();
+			if (installDir != null) {
+				vsLauncherPrefs.gameDirectory = installDir.getPath();
+			}
+		}
 
 		launch(args);
-
 
 //		launchFromCmdLine(args);
 	}
 
-	private static void launchFromCmdLine(String[] args) throws Exception {
-		if (args.length == 0) {
-			throw new Exception("No modpack specified!");
-		}
-
-		String packLink = args[0];
-
-
+	static void loadPreferences() throws Exception {
 		File preferences = new File("vslauncherprefs.json");
 
 		if (!preferences.exists()) {
@@ -80,8 +83,12 @@ public class VSLauncher extends Application {
 			Reader reader = Files.newBufferedReader(preferences.toPath());
 
 			vsLauncherPrefs = gson.fromJson(reader, VSLauncherPrefs.class);
-		}
 
+			reader.close();
+		}
+	}
+
+	static void loadInstallDir() throws Exception {
 		installDir = findInstallDirectory();
 
 		if (installDir != null) {
@@ -89,28 +96,61 @@ public class VSLauncher extends Application {
 		} else {
 			throw new FileNotFoundException("No game install found!");
 		}
-
-
-		updateModpack(packLink);
 	}
 
-	private static void updateModpack(String packLink) throws IOException {
+	/***
+	 * @return A code that represents the state of the install directory
+	 *
+	 * 0: does not exist
+	 * 1: exists
+	 * 2: exists, but is not matching
+	 * 3: exists, but is not a directory
+	 */
+	static int isValidInstallDirectory(String path) {
+		File file;
+		try {
+			file = new File(path);
+			if (!file.exists())
+				return 0;
+		} catch (Exception e) {
+			return 0;
+		}
+
+		if (!file.isDirectory()) {
+			return 3;
+		}
+
+		return file.getName().endsWith("Mods") ? 1 : 2;
+	}
+
+	private static void launchFromCmdLine(String[] args) throws Exception {
+		if (args.length == 0) {
+			throw new Exception("No modpack specified!");
+		}
+
+		String packLink = args[0];
+
+		loadPreferences();
+		loadInstallDir();
+
+		updateModpackAndLaunchGame(packLink);
+	}
+
+	static void updateModpackAndLaunchGame(String packLink) throws IOException {
 		Modpack pack = getModPackFromURL(packLink);
 
-		if (vsLauncherPrefs == null || vsLauncherPrefs.packId == null || !vsLauncherPrefs.packId.equalsIgnoreCase(pack.packId) || vsLauncherPrefs.modpackVersion < pack.packVersion) {
-			if (vsLauncherPrefs != null) {
-				if (vsLauncherPrefs.packId == null || !vsLauncherPrefs.packId.equalsIgnoreCase(pack.packId)) {
-					System.out.println(String.format("New modpack detected!\nCurrent modpack: %s v%s\nNew modpack: %s v%s", vsLauncherPrefs.packId, vsLauncherPrefs.modpackVersion, pack.packId, pack.packVersion));
-				} else {
-					System.out.println(String.format("Update found!\nCurrent modpack version: %s\nLatest modpack version: %s", vsLauncherPrefs.modpackVersion, pack.packVersion));
-				}
+		if (vsLauncherPrefs.packId == null || !vsLauncherPrefs.packId.equalsIgnoreCase(pack.packId) || vsLauncherPrefs.modpackVersion < pack.packVersion) {
+
+			if (vsLauncherPrefs.packId == null || !vsLauncherPrefs.packId.equalsIgnoreCase(pack.packId)) {
+				System.out.println(String.format("New modpack detected!\nCurrent modpack: %s v%s\nNew modpack: %s v%s", vsLauncherPrefs.packId != null ? vsLauncherPrefs.packId : "none", vsLauncherPrefs.modpackVersion, pack.packId, pack.packVersion));
 			} else {
-				System.out.println(String.format("No modpack install detected!\nInstalling modpack %s v%s", pack.packId, pack.packVersion));
+				System.out.println(String.format("Update found!\nCurrent modpack version: %s\nLatest modpack version: %s", vsLauncherPrefs.modpackVersion, pack.packVersion));
 			}
+
 			downloadModpack(pack);
 
-			vsLauncherPrefs = new VSLauncherPrefs();
-
+			vsLauncherPrefs.gameDirectory = installDir.getPath();
+			vsLauncherPrefs.packLink = packLink;
 			vsLauncherPrefs.packId = pack.packId;
 			vsLauncherPrefs.modpackVersion = pack.packVersion;
 
@@ -191,6 +231,8 @@ public class VSLauncher extends Application {
 		String str = installDir.getParentFile().getParentFile() + "\\Vintagestory\\Vintagestory.exe";
 
 		Runtime.getRuntime().exec(str);
+
+		stage.close();
 	}
 
 	private static boolean delRecursive(File dir) {

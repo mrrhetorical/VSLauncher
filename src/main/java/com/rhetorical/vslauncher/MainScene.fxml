@@ -29,17 +29,17 @@
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin>
             </TextField>
-            <Label text="Game Location (VintagestoryData)">
+            <Label text="Game Location (VintagestoryData/Mods)">
                <VBox.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin>
             </Label>
-            <TextField fx:id="gameDirectory" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="280.0" promptText="Enter /VintagestoryData/ file directory...">
+            <TextField fx:id="gameDirectory" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="280.0" promptText="Enter '/VintagestoryData/Mods' file directory...">
                <VBox.margin>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
                </VBox.margin>
             </TextField>
-            <Label textFill="RED" />
+            <Label fx:id="errorLabel" textFill="RED" />
             <Button fx:id="launchButton" mnemonicParsing="false" onAction="#launchButtonPress" text="Launch game">
                <padding>
                   <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
